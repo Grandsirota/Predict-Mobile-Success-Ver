@@ -2,53 +2,58 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
+import pickle
 
 app = Flask(__name__)
 
-# โหลดและทำความสะอาดข้อมูลจากไฟล์ .csv
-data = pd.read_csv('data/Mobile-Price.csv')
-data_cleaned = data.drop(columns=['Ratings'])  # ลบคอลัมน์ที่ไม่ต้องการ
-X = data_cleaned[['RAM', 'ROM', 'Mobile_Size', 'Primary_Cam', 'Selfi_Cam', 'Battery_Power']]
-y = data_cleaned['Price']
+# Load and clean data from CSV file
+data = pd.read_csv('data/laptop_pricing_dataset.csv')
 
-# แบ่งข้อมูลเป็นชุดฝึกและชุดทดสอบ
+X = data[['RAM_GB', 'Storage_GB_SSD', 'Screen_Size_cm', 'CPU_frequency', 'Weight_kg', 'GPU', 'Screen_Type', 'OS']]
+y = data['Price']
+
+X = pd.get_dummies(X, columns=['GPU', 'Screen_Type', 'OS'])
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# ฝึกโมเดลใหม่ทุกครั้งเมื่อรันโค้ด
 model = DecisionTreeRegressor()
 model.fit(X_train, y_train)
 
-# แสดงข้อมูลการฝึก (100 แถวแรก)
-training_data = data_cleaned.head(100)
+with open('model.pkl', 'wb') as f:
+    pickle.dump(model, f)
 
 @app.route('/')
 def home():
-    # แปลงข้อมูลทำนายเป็น list
-    predictions = model.predict(X_test).tolist()
-    # แปลงข้อมูลตารางเพื่อส่งไปแสดงผลในหน้าเว็บ
-    tables = [training_data.to_html(classes='data', header="true")]
-    titles = training_data.columns.values
-    return render_template('index.html', predictions=predictions, tables=tables, titles=titles)
+    return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # รับค่าที่ส่งมาจากฟอร์ม
     try:
-        ram = float(request.form['RAM'])
-        rom = float(request.form['ROM'])
-        mobile_size = float(request.form['Mobile_Size'])
-        primary_cam = float(request.form['Primary_Cam'])
-        selfi_cam = float(request.form['Selfi_Cam'])
-        battery_power = float(request.form['Battery_Power'])
+        with open('model.pkl', 'rb') as f:
+            model = pickle.load(f)
 
-        # สร้าง DataFrame สำหรับการทำนาย
-        input_data = pd.DataFrame([[ram, rom, mobile_size, primary_cam, selfi_cam, battery_power]],
-                                  columns=['RAM', 'ROM', 'Mobile_Size', 'Primary_Cam', 'Selfi_Cam', 'Battery_Power'])
+        # Get JSON data from the request
+        data = request.get_json()
 
-        # ทำนายราคาจากข้อมูลที่ได้รับ
+        # Extract form values
+        ram = float(data['ram'])
+        storage = float(data['storage'])
+        screen_size = float(data['screenSize'])
+        cpu_frequency = float(data['cpuFrequency'])
+        weight = float(data['weight'])
+        gpu = data['gpu']
+        screen_type = data['screen']
+        os = data['os']
+
+        # Create DataFrame for input data and perform one-hot encoding
+        input_data = pd.DataFrame([[ram, storage, screen_size, cpu_frequency, weight, gpu, screen_type, os]],
+                                  columns=['RAM_GB', 'Storage_GB_SSD', 'Screen_Size_cm', 'CPU_frequency', 'Weight_kg', 'GPU', 'Screen_Type', 'OS'])
+        input_data = pd.get_dummies(input_data, columns=['GPU', 'Screen_Type', 'OS'])
+
+        input_data = input_data.reindex(columns=X_train.columns, fill_value=0)
+
         predicted_price = model.predict(input_data)[0]
 
-        # ส่งผลลัพธ์การทำนายกลับในรูปแบบ JSON
         return jsonify({'prediction': predicted_price})
 
     except Exception as e:
