@@ -1,67 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laptop Price Prediction</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laptop Category Prediction</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        :root {
+            --bg-color-light: #f0f0f0;
+            --text-color-light: #333;
+            --bg-color-dark: #333;
+            --text-color-dark: #f0f0f0;
+        }
+
+        body.light {
+            --bg-color: var(--bg-color-light);
+            --text-color: var(--text-color-light);
+        }
+
+        body.dark {
+            --bg-color: var(--bg-color-dark);
+            --text-color: var(--text-color-dark);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background-color: #f0f0f0;
+            border: none;
+            padding: 5px 10px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .theme-toggle:hover {
+            background-color: #ddd;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            text-transform: capitalize;
+            color: #444;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 90%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            outline: none;
+        }
+
+        button {
+            width: 80%;
+            padding: 10px;
+            background: linear-gradient(135deg, #6b23ff, #8e54e9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin: 10px auto;
+            display: block;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #8e54e9, #6b23ff);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        h2 {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Table styling */
+        table.data, #predictionTable, #datasetTable {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        table.data th, table.data td, #predictionTable th, #predictionTable td, #datasetTable th, #datasetTable td {
+            border: 1px solid #444;
+            padding: 12px;
+            text-align: center;
+        }
+
+        #predictionTable th, table.data th, #datasetTable th {
+            background-color: #b71c1c;
+            color: white;
+        }
+
+        #predictionTable td, table.data td, #datasetTable td {
+            background-color: #444;
+            color: #f2f2f2;
+        }
+
+        .toggle-button {
+            margin-top: 15px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body class="light">
-  <div class="container">
-    <header>
-      <h1>Laptop Price Prediction</h1>
-      <button id="theme-toggle" class="theme-toggle">☀️</button>
-    </header>
+    <div class="container">
+        <header>
+            <h1>Laptop Category Prediction</h1>
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+        </header>
 
-    <form id="predictionForm">
-      <div class="form-group">
-        <label for="screen">Screen Type:</label>
-        <select id="screen" name="screen">
-          <option value="IPS Panel">IPS Panel</option>
-          <option value="Full HD">Full HD</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="gpu">GPU:</label>
-        <select id="gpu" name="gpu">
-          <option value="1">AMD</option>
-          <option value="2">Intel</option>
-          <option value="3">NVidia</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="os">Operating System:</label>
-        <select id="os" name="os">
-          <option value="Windows">Windows</option>
-          <option value="Linux">Linux</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="screenSize">Screen Size (cm):</label>
-        <input type="number" id="screenSize" name="screenSize" step="0.1" required>
-      </div>
-      <div class="form-group">
-        <label for="cpuFrequency">CPU Frequency (GHz):</label>
-        <input type="number" id="cpuFrequency" name="cpuFrequency" step="0.1" required>
-      </div>
-      <div class="form-group">
-        <label for="ram">RAM (GB):</label>
-        <input type="number" id="ram" name="ram" required>
-      </div>
-      <div class="form-group">
-        <label for="storage">Storage SSD (GB):</label>
-        <input type="number" id="storage" name="storage" required>
-      </div>
-      <div class="form-group">
-        <label for="weight">Weight (kg):</label>
-        <input type="number" id="weight" name="weight" step="0.01" required>
-      </div>
-      <button type="button" id="predictBtn">Predict</button>
-    </form>
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="ram">RAM (GB):</label>
+                <input type="text" id="ram" name="ram" required>
+            </div>
 
-    <h2 id="predictionResult"></h2>
-  </div>
+            <div class="form-group">
+                <label for="storage">Storage (GB SSD):</label>
+                <input type="text" id="storage" name="storage" required>
+            </div>
 
-  <script src="script.js"></script>
+            <div class="form-group">
+                <label for="screenSize">Screen Size (cm):</label>
+                <input type="text" id="screenSize" name="screenSize" required>
+            </div>
+
+            <div class="form-group">
+                <label for="cpuFrequency">CPU Frequency (GHz):</label>
+                <input type="text" id="cpuFrequency" name="cpuFrequency" required>
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg):</label>
+                <input type="text" id="weight" name="weight" required>
+            </div>
+
+            <button type="submit">Predict</button>
+        </form>
+
+        <div id="result"></div>
+
+        <button id="toggleTableButton">Show/Hide Prediction Table</button>
+
+        <table id="predictionTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>RAM (GB)</th>
+                    <th>Storage (GB SSD)</th>
+                    <th>Screen Size (cm)</th>
+                    <th>CPU Frequency (GHz)</th>
+                    <th>Weight (kg)</th>
+                    <th>Predicted Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="tableRam"></td>
+                    <td id="tableStorage"></td>
+                    <td id="tableScreenSize"></td>
+                    <td id="tableCpuFrequency"></td>
+                    <td id="tableWeight"></td>
+                    <td id="tableCategory"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Dataset</h2>
+
+        <div class="toggle-button">
+            <button id="toggleDatasetButton">Show/Hide Dataset</button>
+        </div>
+
+        <table id="datasetTable" style="display:none;">
+            <!-- Example dataset -->
+            <thead>
+                <tr>
+                    <th>RAM (GB)</th>
+                    <th>Storage (GB SSD)</th>
+                    <th>Screen Size (cm)</th>
+                    <th>CPU Frequency (GHz)</th>
+                    <th>Weight (kg)</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>8</td>
+                    <td>256</td>
+                    <td>33</td>
+                    <td>2.5</td>
+                    <td>1.5</td>
+                    <td>Mid-range</td>
+                </tr>
+                <tr>
+                    <td>16</td>
+                    <td>512</td>
+                    <td>38</td>
+                    <td>3.2</td>
+                    <td>2.0</td>
+                    <td>High-end</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Submit form and handle prediction result
+            $('#predictionForm').on('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                $.ajax({
+                    type: "POST",
+                    url: "/predict",
+                    data: {
+                        ram: $('#ram').val(),
+                        storage: $('#storage').val(),
+                        screenSize: $('#screenSize').val(),
+                        cpuFrequency: $('#cpuFrequency').val(),
+                        weight: $('#weight').val()
+                    },
+                    success: function(data) {
+                        if (data.error) {
+                            $('#result').html("Error: " + data.error);
+                        } else {
+                            $('#result').html("Predicted Category: " + data.prediction);
+
+                            // Populate the table with the values
+                            $('#tableRam').text($('#ram').val());
+                            $('#tableStorage').text($('#storage').val());
+                            $('#tableScreenSize').text($('#screenSize').val());
+                            $('#tableCpuFrequency').text($('#cpuFrequency').val());
+                            $('#tableWeight').text($('#weight').val());
+                            $('#tableCategory').text(data.prediction);
+
+                            // Show the table
+                            $('#predictionTable').show();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#result').html("An error occurred: " + error);
+                    }
+                });
+            });
+
+            // Toggle prediction table visibility
+            $('#toggleTableButton').on('click', function() {
+                $('#predictionTable').toggle(); // Show or hide the table
+            });
+
+            // Toggle dataset table visibility
+            $('#toggleDatasetButton').on('click', function() {
+                $('#datasetTable').toggle(); // Show or hide the dataset
+            });
+
+            // Theme toggle
+            $('#themeToggle').on('click', function() {
+                if ($('body').hasClass('light')) {
+                    $('body').removeClass('light').addClass('dark');
+                    $('#themeToggle').text('☀️');
+                } else {
+                    $('body').removeClass('dark').addClass('light');
+                    $('#themeToggle').text('🌙');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

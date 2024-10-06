@@ -2,59 +2,63 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
-import pickle
 
 app = Flask(__name__)
 
 # Load and clean data from CSV file
 data = pd.read_csv('data/laptop_pricing_dataset.csv')
 
-X = data[['RAM_GB', 'Storage_GB_SSD', 'Screen_Size_cm', 'CPU_frequency', 'Weight_kg', 'GPU', 'Screen_Type', 'OS']]
-y = data['Price']
+# Mapping numeric categories to string values
+category_mapping = {
+    1: 'Gaming',
+    2: 'Netbook',
+    3: 'Notebook',
+    4: 'Ultrabook',
+    5: 'Workstation'
+}
 
-X = pd.get_dummies(X, columns=['GPU', 'Screen_Type', 'OS'])
+# Select relevant features and target variable
+X = data[['RAM_GB', 'Storage_GB_SSD', 'Screen_Size_cm', 'CPU_frequency', 'Weight_kg']]
+y = data['Category']  # Assuming 'Category' is numeric in the dataset
 
+# Split data into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Train the model
 model = DecisionTreeRegressor()
 model.fit(X_train, y_train)
 
-with open('model.pkl', 'wb') as f:
-    pickle.dump(model, f)
-
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # Convert the DataFrame to an HTML table
+    data_html = data.to_html(classes='table table-striped', index=False)
+    
+    # Render the template and pass the table HTML
+    return render_template('index.html', data_table=data_html)
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        with open('model.pkl', 'rb') as f:
-            model = pickle.load(f)
+        # Get the form values from the request
+        ram = float(request.form['ram'])
+        storage = float(request.form['storage'])
+        screen_size = float(request.form['screenSize'])
+        cpu_frequency = float(request.form['cpuFrequency'])
+        weight = float(request.form['weight'])
 
-        # Get JSON data from the request
-        data = request.get_json()
+        # Create a DataFrame for the input data
+        input_data = pd.DataFrame([[ram, storage, screen_size, cpu_frequency, weight]],
+                                  columns=['RAM_GB', 'Storage_GB_SSD', 'Screen_Size_cm', 'CPU_frequency', 'Weight_kg'])
 
-        # Extract form values
-        ram = float(data['ram'])
-        storage = float(data['storage'])
-        screen_size = float(data['screenSize'])
-        cpu_frequency = float(data['cpuFrequency'])
-        weight = float(data['weight'])
-        gpu = data['gpu']
-        screen_type = data['screen']
-        os = data['os']
+        # Use the model to predict the category
+        predicted_category_numeric = model.predict(input_data)[0]
 
-        # Create DataFrame for input data and perform one-hot encoding
-        input_data = pd.DataFrame([[ram, storage, screen_size, cpu_frequency, weight, gpu, screen_type, os]],
-                                  columns=['RAM_GB', 'Storage_GB_SSD', 'Screen_Size_cm', 'CPU_frequency', 'Weight_kg', 'GPU', 'Screen_Type', 'OS'])
-        input_data = pd.get_dummies(input_data, columns=['GPU', 'Screen_Type', 'OS'])
+        # Convert the numeric prediction to the corresponding string category
+        predicted_category_string = category_mapping.get(int(predicted_category_numeric), "Unknown")
 
-        input_data = input_data.reindex(columns=X_train.columns, fill_value=0)
-
-        predicted_price = model.predict(input_data)[0]
-
-        return jsonify({'prediction': predicted_price})
+        # Return the prediction as JSON
+        return jsonify({'prediction': predicted_category_string})
 
     except Exception as e:
         return jsonify({'error': str(e)})
